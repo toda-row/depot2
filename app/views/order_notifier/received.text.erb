@@ -1,0 +1,11 @@
+OrderNotifier#received
+
+Dear <%= @order.name %>
+
+Pragmaticストアでのご注文、誠にありがとうございます。
+
+あなたが注文されたのは以下の項目です。
+
+<%= render @order.line_items %>
+
+あなたの注文を発送する際には、別途メールでお伝えいたします。
