@@ -12,8 +12,13 @@
 <body class='<%= controller.controller_name %>'>
 
 	<div id="banner">
+		<%= form_tag store_path, class: 'locale' do %>
+		<%= select_tag 'set_locale', options_for_select(LANGUAGES, I18n.locale.to_s),onchange: 'this.form.submit()' %>
+		<%= submit_tag 'submit' %>
+		<%= javascript_tag "$('.locale input').hide()" %>
+		<% end %>
 		<%= image_tag("logo.png") %>
-		<%= @page_title || "Pragmatic　Bookshelf" %>
+		<%= @page_title || t('.title') %>
 	</div>
 
 	<div id="columns">
@@ -25,16 +30,27 @@
 			<% end %>
 			
 			<ul>
-				<li><a href="">ホーム</a></li>
-				<li><a href="">よくある質問</a></li>
-				<li><a href="">ニュース</a></li>
-				<li><a href="">お問い合わせ</a></li>
+				<li><a href="http://www...."><%= t('.home') %></a></li>
+				<li><a href="http://www...."><%= t('.question') %></a></li>
+				<li><a href="http://www...."><%= t('.news') %></li>
+				<li><a href="http://www...."><%= t('.contact') %></li>
 			</ul>
+
+			<% if session[:user_id] %>
+				<ul>
+					<li><%= link_to '注文', orders_path %></li>
+					<li><%= link_to '商品', products_path %></li>
+					<li><%= link_to 'ユーザー', users_path %></li>
+				</ul>
+
+			<%= button_to 'ログアウト', logout_path, method: :delete %>
+			<% end %>
 		</div>
+
 		<div id="main">
 			<%= yield %>
 		</div>
+
 	</div>
 </body>
-
 </html>

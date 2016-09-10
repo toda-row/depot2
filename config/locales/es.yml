@@ -1,0 +1,81 @@
+
+es:
+
+  layouts:
+    application:
+      title: "Publicaciones de Pragmatic"
+      home: "inicio"
+      questions: "Preguntas"
+      news: "Noticias"
+      contact: "Contacto"
+
+
+
+  store:
+    index:
+      title_html: "Su Cat&aacute;logo de Pragmatic"
+      add_html: "A&ntilde;adir al Carrito"
+
+  carts:
+    cart:
+      title: "Carrito de la Compra"
+      empty: "Vaciar Carito"
+      checkout: "Comprar"
+
+  number:
+    currency:
+      format:
+        unit: "$US"
+        precision: 2
+        separater: "."
+        delimiter: ","
+        format: "n&nbsp;%u"
+
+  order:
+    new:
+      legent: "Por favor, introduzca sus datos"
+    form:
+      name: "Nombre"
+      address_html: "Direcci&oacute;n"
+      email: "E-mail"
+      pay_type: "Forma de pago"
+      pay_prompt: "Seleccione un m&eacute;todo de pagp"
+      submit: "Realizar Pedido"
+      
+
+  activerecoard:
+    models:
+      order: "pedido"
+    attributes:
+      order:
+        address: "Direcci&oacute;n"
+        name: "Nombre"
+        email: "E-mail"
+        pay_tyoe: "Forma de pago"
+
+
+    errors:
+      inclusion: "no est&aacute; incluido en la lista"
+      blank: "no puede qudar en blanco"
+
+  errors:
+    template:
+      body: "Hay problemas con los siguientes campos"
+      header: 
+        one: "1 error ha impedido que esto %{model} se guarde"
+        other: "% {count} errores han impedido que esto %{model} se guarde" 
+
+
+  thanks: "Gracias por su pedido"
+
+
+
+
+
+
+
+
+
+
+
+

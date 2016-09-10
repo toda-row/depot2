@@ -1,4 +1,7 @@
 class OrdersController < ApplicationController
+
+  skip_before_filter :authorize, only: [:new, :create]
+  
   before_action :set_order, only: [:show, :edit, :update, :destroy]
 
   # GET /orders
@@ -41,6 +44,7 @@ class OrdersController < ApplicationController
 
   # POST /orders
   # POST /orders.json
+
   def create
     @order = Order.new(order_params)
     @order.add_line_items_from_cart(current_cart)
@@ -50,7 +54,7 @@ class OrdersController < ApplicationController
         Cart.destroy(session[:cart_id])
         session[:cart_id] = nil
         OrderNotifier.received(@order).deliver
-        format.html { redirect_to store_index_url, notice: 'ご注文ありがとうございます' }
+        format.html { redirect_to store_index_url, notice: I18n.t('.thanks') }
         format.json { render json: @order, status: :created, location: @order }
       else
         @cart = current_cart

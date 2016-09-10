@@ -1,6 +1,6 @@
 <% unless cart.line_items.empty? %>
 
-<div class="cart_title">カート</div>
+<div class="cart_title"><%= t('.title') %></div>
 <table>
 	<%= render(cart.line_items) %>
 
@@ -9,7 +9,7 @@
 		<td class="total_cell"><%= number_to_currency(cart.total_price) %></td>		
 	</tr>
 </table>
-<%= button_to "チェックアウトする", new_order_path, method: :get %>
-<%= button_to 'カートを空にする', cart, method: :delete, data: { confirm: '本当によいですか?' } %>
+<%= button_to t('.checkout'), new_order_path, method: :get %>
+<%= button_to t('.empty'), cart, method: :delete, data: { confirm: '本当によいですか?' } %>
 
 <% end %>
