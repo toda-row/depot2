@@ -1,0 +1,2698 @@
+
+rails3 4の違い
+http://www.techscore.com/tech/Ruby/rails-4.0/rails-4.0-whats-new/
+
+$ ruby -v
+ruby 2.3.0p0
+
+$rails version
+Rails 4.2.7.1
+
+$rails new depot 
+
+$rails generate scaffold Product \title:string description:text image_url:string price:decimal
+
+
+#db/~
+ t.decimal :price, precision: 8, scale: 2
+
+$rake db:migrate
+
+$rails s
+
+#views/product/_form
+<%= f.text_area :description, rows: 6 %>
+
+
+$rake test
+
+$rake db:seed
+
+
+#asset/stylesheets/products
+
+.products {
+	table {
+		border-collapse: collapse;
+	}
+
+	table tr td {
+		padding: 5px;
+		verticial-aling: top;
+	}
+
+	.list_image {
+		width: 60px;
+		height: 70px;
+	}
+
+	.list_description {
+		width: 60%;
+
+		dl {
+			marge: 0;
+		}
+
+		dt {
+			color: #224;
+			font-weight: bold;
+			font-size: larger;
+		}
+
+		dd {
+			marge: 0;
+		}
+	}
+
+	.list_actions {
+		font-size: x-small;
+		text-align: right;
+		padding-left: 1em;
+	}
+	
+	.list_line_even {
+		background: #e0f8f8;
+	}
+
+	.list_line_odd {
+		background: #f8b0f8;
+	}
+
+}
+
+#views/layouts/application.html.erb
+
+<body class='<%= controller.controller_name %>'>
+<%= yield %>
+</body>
+
+#view/products/index.html.erb
+
+<h1>Listing products</h1>
+
+<table>
+<% @products.each do |product| %>
+  <tr class="<%= cycle('list_line_odd', 'list_line_even') %>">
+
+    <td>
+      <%= image_tag(product.image_url, class: 'list_image') %>
+    </td>
+
+    <td class="list_description">
+      <dl>
+        <dt><%= product.title %></dt>
+        <dd><%= truncate(strip_tags(product.description),length: 80) %></dd>
+      </dl>
+    </td>
+
+    <td class="list_actions">
+      <%= link_to 'Show', product %><br/>
+      <%= link_to 'Edit', edit_product_path(product) %><br/>
+      <%= link_to 'Destroy', product,
+                   data: { confirm: 'Are you sure?' },
+                    method: :delete %>
+    </td>
+  </tr>
+  
+<% end %>
+</table>
+<br />
+
+<%= link_to 'New product', new_product_path %>
+
+
+#models/product.rb
+
+# encoding: utf-8
+
+validates :title, :description, :image_url, presence: true
+validates :price, numericality: {greater_than_or_equal_to: 0.01}
+validates :title, uniqueness: true
+validates :image_url, allow_blank: true, format: {
+	with: %r{\.(gif|jpg|png)$}i,
+	message: 'はGIF、JPG、PNG画像のURLでなければなりません'
+}
+
+
+#test/functional/products_controller_test
+
+    @update = {
+      title:'Lorem Ipsum'
+      description:'Wibbles are fun!'
+      image_url:'lorem.jpg'
+      price:19.95
+    }
+
+/////
+      post :create, product: @update
+//////
+		put :update, id: @product.to_param, product: @update
+
+
+#test/models/product_test
+
+fixtures :products
+
+  # test "the truth" do
+  #   assert true
+  # end
+
+	test "product attributes must not be empty" do
+		product = Product.new
+		assert product.invalid?
+		assert product.errors[:title].any?
+		assert product.errors[:description].any?
+		assert product.errors[:price].any?
+		assert product.errors[:image_url].any?
+	end
+
+	test "product price must be positive" do
+	    product = Product.new(title: "My Book Title",
+	                description: "yyy",
+	                image_url: "zzz.jpg")
+	    product.price = -1
+	    assert product.invalid?
+	    assert_equal "must be greater than or equal to 0.01",
+	      product.errors[:price].join('; ')
+
+	    product.price = 0
+	    assert product.invalid?
+	    assert_equal "must be greater than or equal to 0.01",
+	      product.errors[:price].join('; ')
+
+	    product.price = 1
+	    assert product.valid?
+	end
+
+	def new_product(image_url)
+	    Product.new(title: "My Book Title",
+	          description: "yyy",
+	          price: 1,
+	          image_url: image_url)
+	end
+
+	test "image_url" do
+	    ok = %w{ fred.gif fred.jpg fred.png FRED.JPG FRED.Jpg
+	        http://a.b.c/x/y/z/fred.gif}
+	    bad = %w{ fred.doc fred.gif/more fred.gif.more}
+
+	    ok.each do |name|
+	      assert new_product(name).valid?, "#(name) shouldn't be invalid"
+	    end
+
+	    bad.each do |name|
+	      assert new_product(name).invalid?, "#(name) shouldn't be valid"
+	    end
+	end
+
+	test "product is not valid without a unique title - i18n" do
+		product = Product.new(title: products(:ruby).title,
+							description: "yyy",
+							price: 1,
+							image_url: "fred.gif")
+		assert !product.save
+		assert_equal "has already been taken", product.errors[:title].join('; ')
+	end
+
+
+///////
+
+
+#test/fixture/products.yml
+
+ruby:
+  title: Programming Ruby 1.9
+  description: Ruby is the fastest growing and most exciting dynamic language out there. If you need to get working programs delivered fast, you should add Ruby to your toolbox.
+  price: 49.50
+  image_url: ruby.png
+
+
+
+$rake test
+
+$rails generate controller Store index
+
+#config/routes.rb p90
+
+root 'store#index'
+
+
+#controllers/store_controller
+
+ 	@products = Product.order(:title)
+
+#views/store/index.html.erb
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+
+<h1>Pragmaticカタログ</h1>
+
+<% @products.each do |product| %>
+	<div class="entry">
+		<%= image_tag(product.image_url) %>
+		<h3><%= product.title %></h3>
+		<%= sanitize(product.description) %>
+		<div class="price_line">
+			<span class="price"><%= product.price %></span>
+		</div>
+	</div>
+<% end %> 
+
+#assets/stylesheet/store.css.scss
+.store {
+	h1 {
+		margin: 0;
+		padding-bottom: 0.5em;
+		font: 150% sanf-serif;
+		color: #226;
+		border-bottom: 3px dotted #77d;
+	}
+
+	/* ストアカタログ内のエントリ　*/
+	.entry {
+		overflow: auto;
+		margin-top: 1em;
+		border-bottom: 1px doted #77d;
+		min-hight: 100px;
+
+		img {
+			width: 80px;
+			margin-right: 5px;
+			margin-bottom: 5px;
+			position: absolute;
+		}
+
+		h3 {
+			font-size: 120%;
+			font-family: sans-serif;
+			margin-left: 100px;
+			margin-top: 0;
+			margin-bottom: 2px;
+			color: #227;
+		}
+
+		p, div.price_line {
+			margin-left: 100px;
+			margin-top: 0.5em;
+			margin-bottom: 0.8em;
+		}
+
+		.price {
+			color: #44a;
+			font-weight: bold;
+			margin-right: 3em;
+		}
+	}
+}
+
+#views/layouts/application.html.erb
+
+<title>Pragmatic　Books オンラインストア</title>
+
+//////
+<body class='<%= controller.controller_name %>'>
+	<div id="banner">
+		<%= image_tag("logo.png") %>
+		<%= @page_title || "Pragmatic　Bookshelf" %>
+	</div>
+
+	<div id="columns">
+		<div id="side">
+			<ul>
+				<li><a href="">ホーム</a></li>
+				<li><a href="">よくある質問</a></li>
+				<li><a href="">ニュース</a></li>
+				<li><a href="">お問い合わせ</a></li>
+			</ul>
+		</div>
+		<div id="main">
+			<%= yield %>
+		</div>
+	</div>
+</body>
+
+
+#assets/stylesheets/layout.css.scss p95
+新規作成
+
+#banner {
+	background: #9c9;
+	padding: 10px;
+	border-bottom: 2px solid;
+	font: small-caps 40px/40px "Times New Roman", serif;
+	color: #282;
+	text-align: center;
+
+	img {
+		foat: left;
+	}
+}
+
+#notice {
+	color: #000 !important;
+	border: 2px solid red;
+	padding: 1em;
+	margin-bottom: 2em;
+	background-color: #f0f0f0;
+	font: bold smaller sans-serif;
+}
+
+#columns {
+	background: #141;
+
+	#main{
+		margin-left: 17em;
+		padding: 1em;
+		background: white;
+	}
+
+	#side {
+		float: left;
+		padding: 1em 2em;
+		width: 13em;
+		background: #141;
+
+		ul {
+			padding: 0;
+			li {
+			list-style: none;
+
+				a {
+					color: 3bfb;
+					font-size: small;
+				}
+			}
+		}
+	}
+}
+
+#app/views/store/index
+
+<span class="price"><%= number_to_currency(product.price) %></span>
+
+#test/controllers/store_controller_test.rb p98
+
+  test "should get index" do
+    get :index # 検討order_url
+    assert_response :success
+    assert_select '#columns #side a', minimum: 4
+    assert_select '#main .entry', 3
+    assert_select 'h3','Programming Ruby 1.9'
+    assert_select '.price',/\$[,\d]+\.\d\d/
+  end
+
+
+$rake test:controllers
+
+$ rails generate scaffold cart
+
+$ rake db:migrate
+
+#app/controllers/application_controller.rb
+
+private
+
+ 	def current_cart
+ 		Cart.find(session[:cart_id])
+ 	rescue ActiveRecord::RecordNotFound
+ 		cart = Cart.create
+ 		session[:cart_id] = cart.id
+ 		cart
+ 	end
+
+$ rails generate scaffold line_item product_id:integer cart_id:integer
+
+$ rake db:migrate
+
+#app/models/cart.rb
+
+	has_many :line_items, dependent: :destroy
+
+
+#app/models/line_item/rb p103
+
+	belongs_to :product
+	belongs_to :cart
+
+#app/models/product/rb p103
+
+	before_destroy :ensure_not_referenced_by_any_line_item
+
+	///////
+private
+		#商品が参照している項目がないこと確認する
+		def ensure_not_referenced_by_any_line_item
+			if line_items.empty?
+				return true
+			else
+				errors.add(:base, '品目が存在します')
+				return false
+			end
+		end
+
+
+#app/views/store/index
+	
+	<%= button_to 'カートに入れる', line_items_path(product_id: product) %>
+
+#app/assets/stylesheets/store.css.scss
+
+p, div.price_line {
+			margin-left: 100px;
+			margin-top: 0.5em;
+			margin-bottom: 0.8em;
+
+			form, div {
+					display: inline;
+				}
+			
+		}
+
+
+#app/controllers/line_items_controller.rb 
+
+  def create
+    @cart = current_cart
+    product = Product.find(params[:product_id])
+    @line_item = @cart.line_items.build(product: product)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to @line_item, notice: 'Line item was successfully created.' }
+        format.json { render :show, status: :created, location: @line_item }
+      else
+        format.html { render :new }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+#test/contorollers/line_item_contoroller_test.rb p107
+	test "should create line_item" do
+	    assert_difference('LineItem.count') do
+	      post :create, product_id: products(:ruby).id
+	    end
+
+	    assert_redirected_to cart_path(assigns(:line_item).cart)
+	end
+
+$rake test
+
+#app/views/carts/show.html.erb
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h2>Pragmaticカート</h2>
+
+<ul>
+	<% @cart.line_items.each do |item| %>
+		<li><&= item.product.title %></li>
+	<% end %>
+</ul>
+
+
+$rails generate migration add_quantity_to_line_items quantity:integer
+
+
+#db/migrate/...._add_quantity_to_line_items.rb
+
+  def change
+    add_column :line_items, :quantity, :integer, default: 1    
+  end
+
+rake db:migrate
+
+#app/models/cart.rb p112
+
+class Cart < ActiveRecord::Base
+	has_many :line_items, dependent: :destroy
+
+	def add_product(product_id)
+		current_item = line_items.find_by_product_id(product_id)
+		if current_item
+			current_item.quantity += 1
+		else
+			current_item = line_items.build(product_id: product_id)
+		end
+		current_item
+end
+
+
+#app/controller/line_items_controller p112
+
+def create
+    @cart = current_cart
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product.id)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to @line_item.cart, notice: 'Line item was successfully created.' }
+        format.json { render json: @line_item, status: :created, location: @line_item }
+      else
+        format.html { render :new }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+
+#app/view/carts/show.html.erb p112
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<h2>Pragmaticカート</h2>
+<ul>
+	<% @cart.line_items.each do |item| %>
+	<li><%= item.quantity %> &times; <%= item.product.title %></li>
+	<% end %>
+</ul>
+
+
+$ rails generate migration combine_items_in_cart.rb
+
+#db/migratte/...._combine_item_in_cart p113
+
+class CombineItemsInCart < ActiveRecord::Migration
+  
+	def up
+		#カート内に1つの商品に対して、複数の品目があった場合は、1つの品目に置き換える。
+		Cart.all.each do |cart|
+			#カート内の各商品の数をカウントする
+			sums = cart.line_items.group(:product_id).sum(:quantity)
+
+			sums.each do |product_id, quantity|
+				if quantity > 1
+					#個別の品目を削除する
+					cart.line_items.where(product_id: product_id) .delete_all
+
+					#一つの品目に置き換える
+					cart.line_items.create(product_id: product_id, quantity: quantity)
+				end
+			end
+		end
+	end
+end
+
+$rake db:migrate
+
+#db/migratte/...._combine_item_in_cart p114
+
+	def down
+		# 数量>1の品目を複数の品目に分割する
+		Line_item.where("quantity>1").each do |line_item|
+			#個別の品目を追加する
+			line_item.quantity.times do
+				Line.create cart_id: line_item.cart_id
+					product_id: line_item.product_id,quantity: 1
+			end
+
+			#　本の品目を削除する
+			line_item.destroy
+		end
+	end
+
+$rake db:migrate rollback
+
+
+#app/controllers/cart_controller.rb p117
+
+ # GET /carts/1
+  # GET /carts/1.json
+  def show
+    begin
+      @cart = Cart.find(params[:id])
+    rescue ActiveRecord::RecordNotFound
+      logger.error "無効なカート#{params[:id]}にアクセスしようとしました"
+      redirect_to store_url, notice: '無効なカートです'
+    else
+      respond_to do |format|
+        format.html # show.html.erb
+        format.json { render json: @cart }
+      end
+    end
+  end
+
+
+#app/views/carts/show.html.erb
+
+
+<%= button_to 'カートを空にする', @cart, method: :delete, data: { confirm: '本当によいですか?' } %>
+
+
+
+
+
+
+#app/controllers/carts/carts_controller.rb p119
+
+  # DELETE /carts/1
+  # DELETE /carts/1.json
+  def destroy
+    @cart = current_cart
+    @cart.destroy
+    session[:cart_id] = nil
+
+    respond_to do |format|
+      format.html { redirect_to store_url, notice: 'カートは現在空です.' }
+      format.json { head :ok }
+    end
+  end
+
+  これだとエラーなので、支持通りこれにしてみた
+
+   def destroy
+    @cart = current_cart
+    @cart.destroy
+    session[:cart_id] = nil
+    respond_to do |format|
+      format.html { redirect_to store_index_url }
+      format.json { head :ok }
+    end
+  end
+
+#やはりstore_urlにもどす。
+
+
+#test/models/carts_controller_test.rb p119
+
+  test "should destroy cart" do
+    assert_difference('Cart.count', -1) do
+      delete :destroy, {id: @cart.to_param}, {cart_id: @cart.id}
+    end
+
+    assert_redirected_to store_path
+  end
+
+  これだとエラーなので、支持通りこれにしてみた
+
+   test "should destroy cart" do
+    assert_difference('Cart.count', -1) do
+      delete :destroy, {id: @cart.to_param}, {cart_id: @cart.id}
+    end
+
+    assert_redirected_to store_index_url
+  end
+
+
+app/controllers/line_items_controller.rb p120
+
+   def create
+    @cart = current_cart
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product.id)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to @line_item.cart, notice: 'Line item was successfully created.' }
+        format.json { render json: @line_item, status: :created, location: @line_item }
+      else
+        format.html { render :new }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+
+
+
+#app/views/carts/show.html.erb p121
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<div class="cart_title">カート</div>
+
+<table>
+	<%= render(@cart.line_items) %>
+
+	<tr class ="total_line">
+		<td colspan="2">合計</td>
+		<td class= "total_cell"><%= number_to_currency(@cart.total_price) %></td>		
+	</tr>
+</table>
+
+<%= button_to 'カートを空にする', @cart, method: :delete, { confirm: '本当によいですか?' } %>
+
+
+#app/models/line_item.rb p121
+
+class LineItem < ActiveRecord::Base
+	belongs_to :product
+	belongs_to :cart
+
+	def total_price
+		product.price * quantity
+	end
+end
+
+
+#app/models/cart.rb p121
+
+def total_price
+		line_items.to_a.sum {|item| item.total_price }
+end
+
+
+#app/assets/stylsheets/cart.css.scss
+
+
+.carts {
+	.cart_title {
+		font: 120% bold;
+	}
+
+	.item_price, .total_line {
+		text-align: right;
+	}
+
+	.total_line .total_cell {
+		font-weight: bold;
+		border-top: 1px solid #595;
+	}
+}
+
+
+
+#app/views/carts/show.rb p
+
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<div class="cart_title">カート</div>
+
+<table>
+	<%= render(@cart.line_items) %>
+
+	<tr class ="total_line">
+		<td colspan="2">合計</td>
+		<td class= "total_cell"><%= number_to_currency(@cart.total_price) %></td>		
+	</tr>
+</table>
+
+<%= button_to 'カートを空にする', @cart, method: :delete, { confirm: '本当によいですか?' } %>
+
+
+
+
+#app/views/carts/_cart.html.erb p127
+新規作成
+<div class="cart_title">カート</div>
+<table>
+	<%= render(cart.line_items) %>
+
+	<tr class ="total_line">
+		<td colspan="2">合計</td>
+		<td class= "total_cell"><%= number_to_currency(cart.total_price) %></td>		
+	</tr>
+</table>
+
+<%= button_to 'カートを空にする', cart, method: :delete, { confirm: '本当によいですか?' } %>
+
+
+
+
+#app/views/line_items/_line_item.html.erb p127
+新規作成
+	<tr>
+		<td><%= line_item.quantity %> &times; </td>
+		<td><%= line_item.product.title %></td>
+		<td class="item_price"><%= number_to_currency(line_item.total_price) %></td>	
+	</tr>
+
+
+
+#app/views/carts/show.html.erb
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+<%= render @cart %>
+
+
+#app/views/layouts/application.html.erb p129
+
+<div id="side">
+			<div id="cart">
+				<%= render @cart %>
+			</div>
+			
+			<ul>
+				<li><a href="">ホーム</a></li>
+				<li><a href="">よくある質問</a></li>
+				<li><a href="">ニュース</a></li>
+				<li><a href="">お問い合わせ</a></li>
+			</ul>
+		</div>
+
+#app/controller/store_controller.rb p129
+
+  def index
+  	@products = Product.order(:title)
+  	@cart = current_cart
+  end
+
+
+#app/assets/stylesheets/cart.css.scss p130
+
+.carts, #side #cart {
+	.cart_title {
+		font: 120% bold;
+	}
+
+	.item_price, .total_cell {
+		text-align: right;
+	}
+
+	.total_line .total_cell {
+		font-weight: bold;
+		border-top: 1px solid #595;
+	}
+}
+
+
+#app/assets/stylesheets/layout.css.scss p130
+
+	#side {
+		float: left;
+		padding: 1em 2em;
+		width: 13em;
+		background: #141;
+
+		form,div {
+			display: inline;
+		}
+
+		input {
+			font-size: small;
+		}
+
+		#cart {
+			font-size: smaller;
+			color: white;
+
+			table {
+				border-top: 1px dotted #595;
+				border-bottom: 1px dotted #595;
+				margin-bottom: 10px;
+			}
+		}
+
+		ul {
+			padding: 0;
+			li {
+			list-style: none;
+
+				a {
+					color: 3bfb;
+					font-size: small;
+				}
+			}
+		}
+	}
+
+
+#app/controllers/line_items_controller.rb p131
+  def create
+    @cart = current_cart
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product.id)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to store_url }
+        format.json { render json: @line_item, status: :created, location: @line_item }
+      else
+        format.html { render :new }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+
+エラーが出るので修正してみる
+        format.html { redirect_to store_index_url }
+
+
+
+#app/views/store/index.html.erb p132
+
+<% @products.each do |product| %>
+
+	<div class="entry">
+		<%= image_tag(product.image_url) %>
+		<h3><%= product.title %></h3>
+		<%= sanitize(product.description) %>
+		<div class="price_line">
+			<span class="price"><%= number_to_currency(product.price) %></span>
+			<%= button_to 'カートに入れる', line_items_path(product_id: product) %>
+		</div>
+	</div>
+<% end %> 
+
+
+
+#app/controllers/line_items_controller.rb p133
+
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to store_url, notice: 'Line item was successfully created.' }
+        format.js
+        format.json { render json: @line_item, status: :created, location: @line_item }
+      else
+        format.html { render :new }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+
+
+#app/views/line_items/create.js.erb p133
+新規作成
+$('#cart').html("<%=j render @cart %>");
+
+#app/assets/javascripts/application.js p136
+
+//
+//= require jquery
+//= require jquery-ui
+//= require jquery_ujs
+//= require turbolinks
+//= require_tree .
+
+
+#app/controllers/line_items_controller.rb p136
+
+def create
+    @cart = current_cart
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product.id)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to store_url }
+        format.js { @current_item = @line_item }
+        format.json { render json: @line_item, status: :created, location: @line_item }
+      else
+        format.html { render :new }
+        format.json { render json: @line_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+#app/views/line_items/_line_item.html.rb p136
+
+	<% if line_item == @current_item %>
+	<tr id="current_item">
+	<% else %>
+	<tr>
+	<% end %>
+		<td><%= line_item.quantity %>&times;</td>
+		<td><%= line_item.product.title %></td>
+		<td class="item_price"><%= number_to_currency(line_item.total_price) %></td>	
+	</tr>
+
+
+
+#app/views/line_items/create.js.erb p137
+
+$('#cart').html("<%=j render @cart %>");
+
+$('#current_item').css({'background-color':'#88ff88'}).
+	animate({'background-color':'#114411'}, 1000);
+
+#app/views/carts/_cart.html.erb p137 空のカートを隠す
+
+<% unless cart.line_items.empty? %>
+
+<div class="cart_title">カート</div>
+<table>
+	<%= render(cart.line_items) %>
+
+	<tr class ="total_line">
+		<td colspan="2">合計</td>
+		<td class= "total_cell"><%= number_to_currency(add_productcart.total_price) %></td>		
+	</tr>
+</table>
+
+<%= button_to 'カートを空にする', cart, method: :delete, data: { confirm: '本当によいですか?' } %>
+
+<% end %>
+
+#app/views/line_items/create.js.erb p138 カートをスムーズに表示
+
+if ($('#cart tr').length == 1) ( $('#cart').show('blind', 1000))
+
+
+#app/views/layouts/application.html.erb p138 カートが空になった時、非表示にする  下記コードは書かない
+	<div id="cart"
+		<% if @cart.line_items.empty? %>
+			style="display: none"
+			<% end %>
+		>
+		<% render(create) %>
+	</div>
+
+#app/views/layouts/application.html.erb p139 上記コードを使わず、整理するヘルパーメソッド
+
+<%= hidden_div_if(@cart.line_items.empty?, id: 'cart') do %>
+	<%= render @cart %>
+<% end %>
+
+
+#app/helper/apllication_helper.rb p139 上記連動
+
+module ApplicationHelper
+
+	def hidden_div_if(condition, attributes = (), &block)
+		if condition
+			attributes["style"] = "display: none"
+		end
+		content_tag("div", attributes, &block)
+	end
+end
+
+#app/controller/carts_controller.rb p139 フラッシュメッセージの削除
+
+  def destroy
+    @cart = current_cart
+    @cart.destroy
+    session[;cart_id] = nil
+    respond_to do |format|
+      format.html { redirect_to store_url }
+      format.json { head :ok }
+    end
+  end
+
+
+#app/assets/javascripts/store.coffee 画像クリックを可能にする
+
+$ ->
+	$('.store .entry > img').click ->
+		$(this).parent().find(':submit').click()
+
+$rake test
+
+エラーが出る
+
+unmethod line_items
+
+#app/vies/layouts/application.html.erb p142 エラーテスト修正
+
+<div id="columns">
+		<div id="side">
+			<% if @cart %>
+				<%= hidden_div_if(@cart.line_items.empty?, id: 'cart') do %>
+					<%= render @cart %>
+				<% end %>
+			<% end %>
+			
+			<ul>
+				<li><a href="">ホーム</a></li>
+				<li><a href="">よくある質問</a></li>
+				<li><a href="">ニュース</a></li>
+				<li><a href="">お問い合わせ</a></li>
+			</ul>
+		</div>
+		<div id="main">
+			<%= yield %>
+		</div>
+	</div>
+
+#test/controllers/line_item_controller_test.rb p143 リダイレクトの値が想定と異なるエラーの修正
+
+  test "should create line_item" do
+    assert_difference('LineItem.count') do
+      post :create, product_id: products(:ruby).id
+    end
+
+    assert_redirected_to store_path
+  end
+
+エラーが出るので、修正してみる
+
+   assert_redirected_to store_index_url
+
+
+  #test/controllers/line_item_controller_test.rb p143 ajaxのテスト
+
+  test "should create line_item via ajax" do
+    assert_difference('LineItem.count') do
+      xhr :post, :create, product_id: products(:ruby).id
+    end
+
+    assert_response :success
+    assert_select_jquery :html, '#cart' do
+      assert_select 'tr#current_item td', /Programming Ruby 1.9/
+    end
+  end
+
+#test/controllers/store_controller_test.rb p143 coffeescriptのテストコード
+
+  test "markup needed for store.js.coffee is in place" do
+  	get　:index
+  	assert_select '.store .entry > img', 3
+  	assert_select '.entry input[type=submit]', 3
+  end
+
+  タスクG　チェックアウト　p147
+
+
+$ rails generate scaffold order name:string address:text \email:string pay_type:string
+
+$ rails generate migration add_order_id_to_line_item \order_id:integer
+
+$rake db:migrate
+
+#app/views/carts/_cart.html.erb p148
+
+<%= button_to "チェックアウトする", new_order_path, method: :get %>
+<%= button_to 'カートを空にする', cart, method: :delete, data: { confirm: '本当によいですか?' } %>
+
+#app/controller/order_controller.rb p149
+
+  def new
+    @cart = current_cart
+    if @cart.line_items.empty?
+      redirect_to store_url, notice: "カートが空です"
+      return
+    end
+
+    @order = Order.new
+
+    respond_to do |format|
+      format.html # new.html.erb
+      format.json { render json: @order }
+    end
+  end
+
+#test/controllers/orders_controller_test.rb p149
+
+   test "requires item in cart" do
+    get :new
+    assert_redirected_to store_index_path
+    assert_equal 'カートは空です', flash[:notice]
+  end
+
+  test "should get new" do
+    cart = Cart.create
+    LineItem.create(cart: cart, product: products(:ruby))
+
+    get :new, {}, {cart_id: cart.id}
+    assert_response :success
+  end
+
+#app/views/oders/new.html.erb　p151
+
+<h1>New Order</h1>
+
+<div class="depot_form">
+	<fieldset>
+		<legend>お格様の情報を入力してください</legend>
+		<%= render 'form' %>
+	</fieldset>
+</div>
+
+<%= link_to 'Back', orders_path %>
+
+#app/views/order/_form p151
+
+  <div class="field">
+    <%= f.label :name %><br>
+    <%= f.text_field :name, size: 40 %>
+  </div>
+  <div class="field">
+    <%= f.label :address %><br>
+    <%= f.text_area :address, row: 3, cols: 40 %>
+  </div>
+  <div class="field">
+    <%= f.label :email %><br>
+    <%= f.text_field :email, size: 40 %>
+  </div>
+  <div class="field">
+    <%= f.label :pay_type %><br>
+    <%= f.select :pay_type, Order::PAYMENT_TYPES, prompt: 'お支払い方法を選択してください' %>
+  </div>
+  <div class="actions">
+    <%= f.submit '注文する' %>
+  </div>
+<% end %>
+
+#app/models/order.rb　p152
+
+class Order < ActiveRecord::Base
+
+	PAYMENT_TYPES = [ "Check", "Credit card", "Purchase order" ]
+
+end
+
+本には下記に乗っているが、testがエラーになる。
+	PAYMENT_TYPES = ["現金", "クレジットカード", "注文書" ]
+
+#app/assets/stylesheets/layout.css.scss p152
+
+.depot_form {
+	fieldset {
+		background: #efe;
+
+		legent {
+			color: #dfd;
+			background: #141;
+			font-family: sans-serif;
+			padding: 0.2em 1em;
+		}
+	}
+
+	form {
+		label {
+			width: 5em;
+			float: left;
+			text-align: right;
+			padding-top: 0.2em;
+			margin-right: 0.1em;
+			display: block;
+		}
+
+		select, textarea, input {
+			margin-left: 0.5em;
+		}
+
+		.submit {
+			margin-left: 4em;
+		}
+
+		br {
+			display: none
+		}
+	}
+}
+
+
+#app/models/order.rb p153
+
+class Order < ActiveRecord::Base
+
+	PAYMENT_TYPES = [ "Check", "Credit card", "Purchase order" ]
+
+	validates :name, :address, :email, presence: true
+	validates :pay_type, inclusion: PAYMENT_TYPES
+
+end
+
+#test/fixtures/orders.yml p153
+
+  name: Dave Thomas
+  address: MyText
+  email: yoshihiro.t.88@gmail.com
+  pay_type: Check
+
+two:
+  name: MyString
+  address: MyText
+  email: MyString
+  pay_type: MyString
+
+
+
+#test/fixtures/line_items.yml p154
+修正前
+  one:
+  product_id: 1
+  cart_id: 1
+  order: one
+
+two:
+  product_id: 1
+  cart_id: 1
+
+ 修正後
+
+one:
+  product: ruby
+  order: one
+
+two:
+  product: ruby
+  cart: one
+
+
+
+#app/models/line_item.rb p154
+
+class LineItem < ActiveRecord::Base
+	belongs_to :order
+	belongs_to :product
+	belongs_to :cart
+
+	def total_price
+		product.price * quantity
+	end
+end
+
+#app/models/order.rb p154
+
+class Order < ActiveRecord::Base
+	has_many :line_items, dependent: :destroy
+	
+	PAYMENT_TYPES = [ "Check", "Credit card", "Purchase order" ]
+
+	validates :name, :address, :email, presence: true
+	validates :pay_type, inclusion: PAYMENT_TYPES
+
+end
+
+#app/controller/orders_controller.rb p155
+
+修正前
+  def create
+    @order = Order.new(order_params)
+
+    respond_to do |format|
+      if @order.save
+        format.html { redirect_to @order, notice: 'Order was successfully created.' }
+        format.json { render :show, status: :created, location: @order }
+      else
+        format.html { render :new }
+        format.json { render json: @order.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+修正後
+
+  def create
+    @order = Order.new(params[:order])
+    @order.add_line_items_from_cart(current_cart)
+
+    respond_to do |format|
+      if @order.save
+        Cart.destroy(session[:cart_id])
+        session[:cart_id] = nil
+        format.html { redirect_to store_url, notice: 'ご注文ありがとうございます' }
+        format.json { render json: @order, status: :created, location: @order }
+      else
+        @cart = current_cart
+        format.html { render action: "new" }
+        format.json { render json: @order.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+
+
+  #app/models/order.rb p156
+
+  class Order < ActiveRecord::Base
+	has many *line_items, dependent: :destory
+	
+PAYMENT_TYPES = [ "Check", "Credit card", "Purchase order" ]
+
+	validates :name, :address, :email, presence: true
+	validates :pay_type, inclusion: PAYMENT_TYPES
+
+	def add_line_items_from_cart(cart)
+		cart.line_items.each do |item|
+			item.cart_id = nil
+			line_item << item
+		end
+	end
+end
+
+#test/controller/order_controller_test.rb p156
+
+修正前
+  test "should create order" do
+    assert_difference('Order.count') do
+      post :create, order: { address: @order.address, email: @order.email, name: @order.name, pay_type: @order.pay_type }
+    end
+  end
+
+修正後
+  test "should create order" do
+    assert_difference('Order.count') do
+      post :create, order: { address: @order.address, email: @order.email, name: @order.name, pay_type: @order.pay_type }
+    end
+
+    assert_redirected_to store_path
+  end
+
+エラーが出るので下記に修正
+   assert_redirected_to store_index_url
+
+$ sqlite3 -line db/development.sqlite3 p158
+
+sqlite> select * from orders;
+
+sqlite> select*from orders;
+
+#app/views/line_items/create.js.erb p158
+
+$("#notice").hide();
+
+#app/controller/products_controller.rb
+
+  def who_bought
+    @product = Product.find(params[:id])
+    respond_to do |format|
+      format.atom
+    end
+  end
+
+
+#app/views/product/who_bought.atom.builder
+
+atom_feed do |feed|
+	feed.title "who bought #{@product.title}"
+
+	latest_order = @product.orders.sort_by(&:updatesd_at).last
+	feed.update( latest_order && latest_order.updatesd_at )
+
+	@product_orders.each do |order|
+		feed.entry(order) do |entry|
+			entry.title "Order #{order.id}"
+			entry.summary type: 'xhtml' do |xhtml|
+				xhtml.p "Shipped to #{order.address}"
+
+				xhtml.table do
+					xhtml.tr do
+						xhtml.th 'Product'
+						xhtml.th 'Quantity'
+						xhtml.th 'Total Price'
+					end
+
+					order.line_items.each do |item|
+						xhtml.td do
+							xhtml.td item.product.title
+							xhtml.td item.quantity
+							xhtml.td number_to_currency item.total_price
+						end
+					end
+
+					xhtml.tr do
+						xhtml.th 'total', colspan: 2
+						xhtml.th number_to_currency \
+							order.line_items.map($:total_price).sum
+					end
+				end
+
+				xhtml.p "Paid by #{order.pay_type}"
+			end
+			entry.author do |author|
+				entry.name order.name
+				entry.email order.email
+			end
+		end
+	end
+end
+
+
+#app/models/product.rb
+
+	has_many :line_items
+	has_many :order, through: :line_items
+	before_destroy :ensure_not_referenced_by_any_line_item
+
+#app/config/routes.rb p161
+
+  root 'store#index'
+
+  resources :products do
+    get :who_bought, on: :member
+  end
+
+
+$ curl --silent http://localhost:3000/products/3/who_bought.atom
+
+$vi gemfile p162
+
+group :development, :test do
+  # Call 'byebug' anywhere in the code to stop execution and get a debugger console
+  gem 'byebug'
+  gem 'will_paginate'
+end
+
+$ bundle install
+
+#bin/　p163 大量のカートにも対応　スクリプト作成
+新規作成
+
+# encoding: utf-8
+Order.transaction do
+	(1..100) .each do |i|
+		Order.create(:name => "Customer #{i}", :address => "#{i} Main Street", :email => "Customer-#{i}@example.com", :pay_type => "Check")
+	end
+end
+
+$rails runner bin/load_orders.rb
+
+うまくいかず、華麗にスルー 
+
+現金〜Checkに変更
+
+
+#app/controllers/order_controller.rb
+
+  def index
+    @orders = Order.paginate :page=>params[:page], order=>'created_at desc', :per_page => 10
+
+
+    respond_to do |format|
+      format.html # index.html.erb
+      format.json { render json: @orders }
+    end
+  end
+
+      #エラーでorder_urlに変更
+
+def index
+    @orders = Order.paginate :page=>params[:page], order_url=>'created_at desc', :per_page => 10
+ 
+
+#app/views/orders/index.html.erb デフォルトで30件表示　p164
+
+
+<%= link_to 'New Order', new_order_path %>
+
+<p><%= will_paginate @orders %></p>
+
+タスクH：メールの送信
+
+#config/application.rb p167
+
+ config.action_mailer.delivery_method = :smtp | :sendmail | :test
+
+#cofig/environment.rb p168  for gmail
+
+Depot::Application.configure do
+    config.action_mailer.delivery_method = :smtp
+
+    config.action_mailer.smtp_setting = {
+        address: "smtp.gmail.com",
+        port: 587,
+        domein: "smtp.gmail.com",
+        authentication: "plain",
+        user_name: "cafe.commune20@gmail.com",
+        password: "secret",
+        enable_starttls_auto: true
+    }
+end
+
+$ rails generate mailer OrderNotifier received shipped
+
+#app/mailers/order_notifier.rb p169
+
+class OrderNotifier < ApplicationMailer
+
+  default from: 'Sum Ruby <cafe.commune20@gmail.com>'
+
+  # Subject can be set in your I18n file at config/locales/en.yml
+  # with the following lookup:
+  #
+  #   en.order_notifier.received.subject
+  #
+  def received
+    @greeting = "Hi"
+
+    mail to: "yoshihiro.t.88@gmail.com"
+  end
+
+  # Subject can be set in your I18n file at config/locales/en.yml
+  # with the following lookup:
+  #
+  #   en.order_notifier.shipped.subject
+  #
+  def shipped
+    @greeting = "Hi"
+
+    mail to: "yoshihiro.t.88@gmail.com"
+  end
+end
+
+#app/views/order_mailer/received.text.erb p170 メールの定型文
+
+OrderNotifier#received
+
+Dear <%= @order.name %>
+
+Pragmaticストアでのご注文、誠にありがとうございます。
+
+あなたが注文されたのは以下の項目です。
+
+<%= render @order.line_items %>
+
+あなたの注文を発送する際には、別途メールでお伝えいたします。
+
+
+<%= @greeting %>, find me in app/views/order_notifier/received.text.erb
+
+#app/views/line_items/line_item.text.erb　p170
+
+<%= sprintf("%2d x %s",
+			line_item.quantity,
+			truncate(line_item.product.title, length: 50)) %>
+
+#app/mailer/order_notifier.rb p170 receivedメソッドの定義
+
+  def received(order)
+    @order = order
+
+    mail to: order.mail, subject: 'Pragmatic Store Order Confirmation'
+  end
+
+#app/controller/orders_controller.rb
+
+if @order.save
+        Cart.destroy(session[:cart_id])
+        session[:cart_id] = nil
+        OrderNotifier.received(@order).deliver
+        format.html { redirect_to store_url, notice: 'ご注文ありがとうございます' }
+        format.json { render json: @order, status: :created, location: @order }
+      else
+
+エラーでて下記に
+        format.html { redirect_to store_index_url, notice: 'ご注文ありがとうございます' }変更
+
+
+#app/mailer/order_notifier.rb p171
+
+  def shipped(order)
+    @order = order
+
+    mail to: order.email, subject: 'Pragmatic Store Order Shipped'
+  end
+
+
+#app/views/order_notifier/shipped.html.erb
+
+<h3>Pragmaticでのご注文商品を発送いたしました</h3>
+	<p>
+	  ご注文の商品を発送したことをお知らせいたします。
+	</p>
+
+<table>
+		<tr><th colspan="2">数量</th><th>説明</th></tr>
+	<%= render @order.line_items %>
+</table>
+
+#test/mailers/order_notifier_text.rb p172
+
+
+class OrderNotifierTest < ActionMailer::TestCase
+  test "received" do
+    mail = OrderNotifier.received(orders(:one))
+    assert_equal "Pragmatic Store Order Confirmation", mail.subject
+    assert_equal ["yoshihiro.t.88@gmail.com"], mail.to
+    assert_equal ["cafe.commune20@gmail.com"], mail.from
+    assert_match /1 x Programming Ruby 1.9/, mail.body.encoded
+  end
+
+  test "shipped" do
+    mail = OrderNotifier.shipped(orders(:one))
+    assert_equal "Pragmatic Store Order Shipped", mail.subject
+    assert_equal ["yoshihiro.t.88@gmail.com"], mail.to
+    assert_equal ["cafe.commune20@gmail.com"], mail.from
+    assert_match /<td>1&times;<\/td>\s*<td>Programming Ruby 1.9<\/td>/, mail.body.encoded
+  end
+
+end
+
+
+$ rails generate integration_test user_stories
+
+#test/integration/user_stories_test.rb p177
+
+require 'test_helper'
+
+class UserStoriesTest < ActionDispatch::IntegrationTest p177
+	fixtures :products
+
+#　あるユーザーがオンラインストアのインデックスページに訪れます。
+#　ユーザーは商品を選択してカートに入れます。
+#　その後ユーザーはチェックアウトフォームに入力してチェックアウトとします。
+#　チェックアウトフォームを送信するとカートに追加された商品に対応する1つの品目とともにユーザー情報が含まれた注文が作成されます。
+
+	test "buying a product" do
+		LineItem.delete_all
+		Order.delete_all
+		ruby_book = products(:ruby)
+
+		get "/"
+		assert_response :success
+		assert_template "index"
+
+
+		xml_http_request :post, '/line_items', product_id: ruby_book.id
+		assert_response :success
+
+		cart = Cart.find(session[:cart_id])
+		assert_equal 1, cart.line_items.size
+		assert_equal ruby_book, cart.line_items[0].product
+
+		get "/orders/new"
+		assert_response :success
+		assert_template "new"
+
+		post_via_redirect "/orders",
+			order: { name: "Dave Thomas",
+					address: "123 The Street",
+					email:  "yoshihiro.t.88@gmail.com",
+					pay_type: "Check" }
+
+		assert_response :success
+		assert_template "index"
+		cart = Cart.find(session[:cart_id])
+		assert_equal 0, cart.line_items.size
+
+		orders = Order.all
+		assert_equal 1, orders.size
+		order = orders[0]
+
+		assert_equal "Dave Thomas", order.name
+		assert_equal "123 The Street", order.address
+		assert_equal "yoshihiro.t.88@gmail.com", order.email
+		assert_equal "Check", order.pay_type
+
+		assert_equal 1,order.line_items.size
+		line_item = order.line_items[0]
+		assert_equal ruby_book, line_item.product
+
+		mail = ActionMailer::Base.deliveries.last
+		assert_equal ["yoshihiro.t.88@gmail.com"], mail.to
+		assert_equal 'Sum Ruby <cafe.commune20@gmail.com>', mail[:from].value
+		assert_equal "Pragmatic Store Order Confirmation", mail.subject
+	end
+end
+
+#タスクG　ログイン
+
+$ rails generate scaffold User name:string password_digest:string p179
+
+$ rake db:migrate 
+
+#app/models/user.rb p180
+
+class User < ActiveRecord::Base
+	validates :name, presence: true, uniqueness: true
+	has_secure_password
+end
+
+
+#app/controllers/users_controller.rb p180
+
+  def create
+    @user = User.new(user_params)
+
+    respond_to do |format|
+      if @user.save
+        format.html { redirect_to users_url, notice: 'ユーザー#{@user.name}を作成しました。' }
+        format.json { render json:@user, status: :created, location: @user }
+      else
+        format.html { render :new }
+        format.json { render json: @user.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  def update
+    @user = User.find(params[:id])
+
+    respond_to do |format|
+      if @user.update_attributes(user_params)
+        format.html { redirect_to users_url, notice: 'ユーザー#{@user.name}を更新しました。' }
+        format.json { head :ok }
+      else
+        format.html { render :edit }
+        format.json { render json: @user.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+
+  def index
+    @users = User.order(:name)
+    respond_to do |format|
+      format.html #index.html.erb
+      format.json {render json: @users }
+    end
+  end
+
+
+  app/views/users/index.html.erb p181
+
+<p id="notice"><%= notice %></p>
+
+<h1>Listing Users</h1>
+  <% if notice %>
+  <p id="notice"><%= notice %></p>
+  <% end %>
+  
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Password digest</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @users.each do |user| %>
+      <tr>
+        <td><%= user.name %></td>
+        <td><%= user.password_digest %></td>
+        <td><%= link_to 'Show', user %></td>
+        <td><%= link_to 'Edit', edit_user_path(user) %></td>
+        <td><%= link_to 'Destroy', user, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New User', new_user_path %>
+
+
+
+ #app/views/users/_form.html.erb p182
+
+ #rails4 では　:size => "40"　という書き方(size: 40 だとエラー)
+
+<div class="depot_form">
+
+<%= form_for(@user) do |f| %>
+  <% if @user.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@user.errors.count, "error") %> prohibited this user from being saved:</h2>
+
+      <ul>
+      <% @user.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <fieldset>
+  <legend>ユーザー情報の入力</legend>
+
+    <div class="field">
+      <%= f.label :name %>:<br>
+      <%= f.text_field :name, :size => "40" %>
+    </div>
+
+    <div class="field">
+      <%= f.label :password_digest, 'パスワード' %>:<br>
+      <%= f.password_field :password_digest, :size => "40" %>
+    </div>
+
+    <div>
+      <%= f.label :password_digest_confirmaition, '確認' %>:
+      <%= f.password_field :password_digest_confirmaition, :size => "40" %>
+    </div>
+
+    <div class="actions">
+      <%= f.submit %>
+    </div>
+
+  </fieldset>
+<% end %>
+
+</div>
+
+
+
+エラーが出て、vi gemfile で下記の#を取ると治る。
+gem 'bcrypt', '~> 3.1.7'
+
+
+#test/controllers/users_controller_test.rb p183
+
+require 'test_helper'
+
+class UsersControllerTest < ActionController::TestCase
+  setup do
+    @input_attributes = {
+      name: "sam",
+      password: "private",
+      password_confirmation: "private"
+    }
+
+    @user = users(:one)
+  end
+
+  test "should get index" do
+    get :index
+    assert_response :success
+    assert_not_nil assigns(:users)
+  end
+
+  test "should get new" do
+    get :new
+    assert_response :success
+  end
+
+  test "should create user" do
+    assert_difference('User.count') do
+      post :create, user: @input_attributes
+    end
+
+    assert_redirected_to users_path
+  end
+
+  test "should show user" do
+    get :show, id: @user
+    assert_response :success
+  end
+
+  test "should get edit" do
+    get :edit, id: @user
+    assert_response :success
+  end
+
+  test "should update user" do
+    put :update, id: @user.to_param, user: @input_atrributes
+    assert_redirected_to users_path
+  end
+
+  test "should destroy user" do
+    assert_difference('User.count', -1) do
+      delete :destroy, id: @user
+    end
+
+    assert_redirected_to users_path
+  end
+end
+
+
+$ rails generate controller Sessions new create destroy p184 管理者の作成
+
+$ rails generate controller Admin index　p184
+
+#app/controller/session_controller.rb　p184
+
+  def create
+  	user = User.find_by_name(params[:name])
+  	if user and user.authenticate(params[:password])
+  		session[:user_id] = user.id
+  		redirect_to admin_url
+  	else
+  		redirect_to login_url, alert: "無効なユーザー/パスワードの組み合わせです"
+  	end  
+  end
+
+ #app/views/sessions/new.erb p184
+
+ <h1>Sessions#new</h1>
+
+
+<div class="depot_form">
+	<% if flash[:alert] %>
+		<p id="notice"><%= flash[:alert] %></p>
+	<% end %>
+
+	<%= form_tag do %>
+		<fieldset>
+			<legend>ログインしてください</legend>
+
+			<div>
+				<%= label_tag :name, params[:name] %>
+				<%= text_field_tag :name, params[:name] %>
+			</div>
+
+			<div>
+				<%= label_tag :password, 'パスワード:' %>
+				<%= password_field_tag :password, params[:password] %>
+			</div>
+
+			<div>
+				<%= submit_tag "ログイン" %>
+			</div>
+		</fieldset>
+	<% end %>
+</div>
+
+#app/controllers/session_controller.rb p186
+
+  def destroy
+    session[:user_id] =nil
+    redirect_to store_url, notice: "ログアウト"
+  end
+
+#app/views/admin/index.html.erb p186
+
+<h1>ようこそ</h1>
+
+現在の時刻は、<%= Time.now %>です。
+
+We have <%= pluralize(@total_orders, "order") %>
+
+
+#config/rootes.rb p186
+
+  get 'admin/index' => 'admin#index'
+
+    controller :sessions do
+      get 'login' => :new
+      post 'login' => :create
+      delete 'logout' => :destroy
+    end
+
+消す
+
+ get 'sessions/new'
+
+  get 'sessions/create'
+
+  get 'sessions/destroy'
+
+#test/controller/sessions_controller_test.erb p188
+
+
+require 'test_helper'
+
+class SessionsControllerTest < ActionController::TestCase
+  test "should get new" do
+    get :new
+    assert_response :success
+  end
+
+  test "should login" do
+    dave = users(:one)
+    post :create, name: dave, password: 'secret'
+    assert_redirected_to admin_url
+    assert_equal dave.id, session[:user_id]
+  end
+
+  test "should fail login" do
+    dave = users(:one)
+    post :create, name: dave.name, password: 'wrong'
+    assert_redirected_to login_url
+  end
+
+  test "should logout" do
+    delete :destroy
+    assert_redirected_to store_url
+  end
+
+end
+
+#store_index_urlからエラーで変更
+
+
+#test/fixtures/users.yml p188
+
+
+one:
+  name: dave
+  password_digest: <%= BCrypt::Password.create('secret') %>
+  
+
+two:
+  name: MyString
+  password_digest: MyString
+
+#app/controllers/application_controller.erb p189 管理者以外のアクセス制限
+
+class ApplicationController < ActionController::Base
+
+	before_filter :authorize
+
+  # Prevent CSRF attacks by raising an exception.
+  # For APIs, you may want to use :null_session instead.
+  protect_from_forgery with: :exception
+
+ private
+
+ 	def current_cart
+ 		Cart.find(session[:cart_id])
+ 	rescue ActiveRecord::RecordNotFound
+ 		cart = Cart.create
+ 		session[:cart_id] = cart.id
+ 		cart
+ 	end
+
+ 	def authorize
+ 		unless User.find_by_id(session[:user_id])
+ 			redirect_to login_url, notice: "ログインしてください"
+ 		end
+ 	end
+end
+
+#app/controller/store_controller.erb p189  ホワイトリストの作成
+
+class StoreController < ApplicationController
+
+skip_before_filter :authorize
+
+  def index
+  	@products = Product.order(:title)
+  	@cart = current_cart
+  end
+end
+
+#app/controller/session_controller.erb p189
+
+skip_before_filter :authorize
+
+
+#app/controller/carts_controller.erb p190
+
+  skip_before_filter :authorize, only: [:create, :update, :destroy]
+
+
+#app/controller/line_items_controller.erb p190
+
+ skip_before_filter :authorize, only::create
+
+
+#app/controller/orders_controller.erb p190
+
+  skip_before_filter :authorize, only: [:new, :create]
+
+
+#test/test_helper.rb p190
+
+
+ENV['RAILS_ENV'] ||= 'test'
+require File.expand_path('../../config/environment', __FILE__)
+require 'rails/test_help'
+
+class ActiveSupport::TestCase
+  # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
+  fixtures :all
+
+  # Add more helper methods to be used by all tests here...
+
+	def login_as(user)
+  		session[:user_id] = users(user).id
+	end
+
+	def logout
+		session.delete :user_id
+	end
+
+	def setup
+		login_as :one if defined? session
+	end
+
+end
+
+#app/views/layouts/application.html.erb p191
+
+<div id="columns">
+		<div id="side">
+			<% if @cart %>
+				<%= hidden_div_if(@cart.line_items.empty?, id: 'cart') do %>
+					<%= render @cart %>
+				<% end %>
+			<% end %>
+			
+			<ul>
+				<li><a href="">ホーム</a></li>
+				<li><a href="">よくある質問</a></li>
+				<li><a href="">ニュース</a></li>
+				<li><a href="">お問い合わせ</a></li>
+			</ul>
+
+			<% if session[:user_id] %>
+				<ul>
+					<li><%= link_to '注文', orders_path %></li>
+					<li><%= link_to '商品', products_path %></li>
+					<li><%= link_to 'ユーザー', users_path %></li>
+				</ul>
+
+			<%= button_to 'ログアウト', logout_path, method: :delete %>
+			<% end %>
+		</div>
+		<div id="main">
+			<%= yield %>
+		</div>
+	</div>
+
+$rails console p192 管理ユーザー作成
+
+>>User.create(name: 'dave', password: 'secret', password_confirmation: 'secret')
+
+
+>>User.count
+
+
+#app/models/user.rb
+
+	after_destroy :ensure_an_admin_remains
+
+	private
+		def ensure_an_admin_remains
+			if User.count.zero?
+				raise "最後のユーザーは削除できません"
+			end
+		end
+
+
+
+#app/controllers/users_controller.rb p193
+
+  def destroy
+    @user = User.find(params[:id])
+    begin
+      @user.destroy
+      flash[:notice] = "ユーザー#{@user.name}を削除しました"
+    rescue Exception => e
+      flash[:notice] = e.massege
+    end
+
+    respond_to do |format|
+      format.html { redirect_to users_url }
+      format.json { head :ok }
+    end
+  end
+
+#rescure exeptionにエラーで変更
+
+タスクJ：国際化　p197
+
+新規作成
+#config/initializers/i18n.rb p197
+
+
+#encoding: utf-8
+I18n.default_locale = :en
+
+LANGUAGES = [
+	['English', 'en'],
+	["Espa&ntilde;ol".html_safe, 'es']
+	]
+
+
+
+#config/routes.rb p198
+
+  get 'admin/index' => 'admin#index'
+
+    controller :sessions do
+      get 'login' => :new
+      post 'login' => :create
+      delete 'logout' => :destroy
+    end
+
+
+    scope '(:locale)' do
+      resources :users
+      resources :orders
+      resources :line_items
+      resources :carts
+      resources :products do
+        get :who_bought, on: :member
+      end
+      root 'store#index', as: 'store'
+    end
+
+
+#app/controllers/application_controller.rb p199
+
+
+	before_filter :set_i18n_locale_from_params
+	before_filter :authorize
+
+  # Prevent CSRF attacks by raising an exception.
+  # For APIs, you may want to use :null_session instead.
+  protect_from_forgery with: :exception
+
+ private
+
+ 	def set_i18n_locale_from_params
+ 		if params[:locale]
+ 			if I18n.available_locales.include?(params[:locale].to_sym)
+ 				I18n.locale = params[:locale]
+ 			else
+ 				flash.now[:notice] = "#{params[:locale]} translation not available"
+ 				logger.error flash.now[:notice]
+ 			end
+ 		end
+ 	end
+
+ 	def default_url_options
+ 		{ locale: I18n.locale }
+ 	end
+
+
+#app/views/layouts/application.html.erb p201
+
+	<div id="banner">
+		<%= image_tag("logo.png") %>
+		<%= @page_title || t('.title') %>
+	</div>
+
+	/////
+
+			<ul>
+				<li><a href="http://www...."><%= t('.home') %></a></li>
+				<li><a href="http://www..../faq"><%= t('.question') %></a></li>
+				<li><a href="http://www..../news"><%= t('.news') %></li>
+				<li><a href="http://www..../contact"><%= t('.contact') %></li>
+			</ul>
+
+#config/locales/en.yml p202
+
+
+en:
+
+  layouts:
+    application:
+      title: "Pragmatic Bookshelf"
+      home: "Home"
+      questions: "Questions"
+      news: "News"
+      contact: "Contact"
+
+#config/locales/es.yml p202
+新規作成
+
+
+es:
+
+  layouts:
+    application:
+      title: "Publicaciones de Pragmatic"
+      home: "inicio"
+      questions: "Preguntas"
+      news: "Noticias"
+      contact: "Contacto"
+
+
+#app/views/store/index.html.erb p203
+
+<% if notice %>
+<p id="notice"><%= notice %></p>
+<% end %>
+
+
+<h1><%= t('.title_html') %></h1>
+
+
+<% @products.each do |product| %>
+
+	<div class="entry">
+		<%= image_tag(product.image_url) %>
+		<h3><%= product.title %></h3>
+		<%= sanitize(product.description) %>
+		<div class="price_line">
+			<span class="price"><%= number_to_currency(product.price) %></span>
+			<%= button_to t('.add_html'), line_items_path(product_id: product) %>
+		</div>
+	</div>
+<% end %> 
+
+
+#config/locales/en.yml p203
+
+  store:
+    index:
+      title_html: "Your Pragmatic Catalog"
+      add_html: "Add to Cart"
+
+
+#config/locales/es.yml p203
+
+
+  store:
+    index:
+      title_html: "Su Cat&aacute;logo de Pragmatic"
+      add_html: "A&ntilde;adir al Carrito"
+
+
+#app/views/carts/_cart.html.erb p204
+
+<% unless cart.line_items.empty? %>
+
+<div class="cart_title"><%= t('.title') %></div>
+<table>
+	<%= render(cart.line_items) %>
+
+	<tr class ="total_line">
+		<td colspan="2">合計</td>
+		<td class="total_cell"><%= number_to_currency(cart.total_price) %></td>		
+	</tr>
+</table>
+<%= button_to t('.checkout'), new_order_path, method: :get %>
+<%= button_to t('.empty'), cart, method: :delete, data: { confirm: '本当によいですか?' } %>
+
+<% end %>
+
+#config/locales/en.yml
+
+  carts:
+    cart:
+      title: "Your Cart"
+      empty: "Empty cart"
+      checkout: "Checkout"
+
+ config/locales/es.yml p204
+
+   carts:
+    cart:
+      title: "Carrito de la Compra"
+      empty: "Vaciar Carito"
+      checkout: "Comprar"
+
+
+#config/locales/en.yml p205
+   number:
+    currency:
+      format:
+        unit: "$"
+        precision: 2
+        separater: "."
+        delimiter: ","
+        format: "%u%n"
+
+
+#config/locales/es.yml p206
+
+  number:
+    currency:
+      format:
+        unit: "$US"
+        precision: 2
+        separater: ","
+        delimiter: "."
+        format: "%n&nbsp;%u"
+
+
+
+
+#app/views/orders/new.html.erb p207
+
+<div class="depot_form">
+	<fieldset>
+		<legend><%= t('.legend') %></legend>
+		<%= render 'form' %>
+	</fieldset>
+</div>
+
+
+#app/views/orders/_form.html.erb p207
+
+  <div class="field">
+    <%= f.label :name %><br>
+    <%= f.text_field :name, size: 40 %>
+  </div>
+  <div class="field">
+    <%= f.label :address, t('.address_html') %><br>
+    <%= f.text_area :address, row: 3, cols: 40 %>
+  </div>
+  <div class="field">
+    <%= f.label :email %><br>
+    <%= f.text_field :email, size: 40 %>
+  </div>
+  <div class="field">
+    <%= f.label :pay_type %><br>
+    <%= f.select :pay_type, Order::PAYMENT_TYPES, prompt: t('.pay_prompt_html') %>
+  </div>
+  <div class="actions">
+    <%= f.submit t('.submit') %>
+  </div>
+
+#config/locales/en.yml p208
+  order:
+    new:
+      legent: "Please Enter Your Details"
+    form:
+      name: "Name"
+      address_html: "Address"
+      email: "E-mail"
+      pay_type: "Pay with"
+      pay_prompt_html: "Select a payment method"
+      submit: "Place Order"
+      
+
+#config/locales/es.yml p208
+
+  order:
+    new:
+      legent: "Por favor, introduzca sus datos"
+    form:
+      name: "Nombre"
+      address_html: "Direcci&oacute;n"
+      email: "E-mail"
+      pay_type: "Forma de pago"
+      pay_prompt_html: "Seleccione un m&eacute;todo de pagp"
+      submit: "Realizar Pedido"
+
+
+
+#config/locales/es.yml p209
+
+
+  activerecoard:
+    errors:
+      inclusion: "no est&aacute; incluido en la lista"
+      blank: "no puede qudar en blanco"
+
+  errors:
+    template:
+      body: "Hay problemas con los siguientes campos"
+      header: 
+        one: "1 error ha impedido que esto %{model} se guarde"
+        other: "% {count} errores han impedido que esto %{model} se guarde" 
+
+
+
+#app/views/orders/_form.erb p210
+
+  <% if @order.errors.any? %>
+    <div id="error_explanation">
+
+      <h2><%=raw t('errors.template.header', count: @order.errors.count, model: t('activerecord.models.order')) %>.</h2>
+
+      <p><%= t('errors.template.body') %></p>
+
+      <ul>
+      <% @order.errors.full_messages.each do |msg| %>
+        <li><%=raw msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+
+  #config/locates/es.yml p211 英語ですでに書かれている場合はEN不要
+
+    activerecoard:
+    models:
+      order: "pedido"
+    attributes:
+      order:
+        address: "Direcci&oacute;n"
+        name: "Nombre"
+        email: "E-mail"
+        pay_tyoe: "Forma de pago"
+
+
+    errors:
+      inclusion: "no est&aacute; incluido en la lista"
+      blank: "no puede qudar en blanco"
+
+
+
+#app/controllers/orders_controller.erb p211
+
+      if @order.save
+        Cart.destroy(session[:cart_id])
+        session[:cart_id] = nil
+        OrderNotifier.received(@order).deliver
+        format.html { redirect_to store_index_url, notice: I18n.t('.thanks') }
+        format.json { render json: @order, status: :created, location: @order }
+
+        #エラーが出てstore_urlに変更してみる
+
+#config/locales/en.yml p212
+
+  thanks: "Thank you for your order"
+
+#config/locales/es.yml p212
+
+	  thanks: "Gracias por su pedido"
+
+
+
+#app/views/layouts/application.erb p213
+
+	<div id="banner">
+		<%= form_tag store_path, class: 'locale' do %>
+		<%= select_tag 'set_locale', options_for_select(LANGUAGES, I18n.locale.to_s),onchange: 'this.form.submit()' %>
+		<%= submit_tag 'submit' %>
+		<%= javascript_tag "$('.locale input').hide()" %>
+		<% end %>
+		<%= image_tag("logo.png") %>
+		<%= @page_title || t('.title') %>
+	</div>
+
+
+#app/controllers/store_controller.rb p213
+
+
+class StoreController < ApplicationController
+
+skip_before_filter :authorize
+
+  def index
+  	if params[:set_locale]
+  		redirect_to store_path(locale: params[:set_locale])
+  	else
+  		@products = Product.order(:title)
+  		@cart = current_cart
+  	end
+  end
+end
+
+#app/asset/stylesheets/layout.css.scss p213
+
+.locale {
+	float: right;
+	margin: -0.25em 0.1em;
+}
+
+
+
+タスクK：デプロイと本番環境
+
+$ gem install passenger
+
+$ passenger-install-apache2-module
+
+$ apachectl -v
+
+$Gemfile p221
+
+group :production do
+	gem 'mysql2'
+end
+
+
+
+いまここ
+
+
+
+
+
+
+
+
+
+
+
+

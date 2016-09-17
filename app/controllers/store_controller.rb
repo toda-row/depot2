@@ -8,5 +8,6 @@ skip_before_filter :authorize
   	else
   		@products = Product.order(:title)
   		@cart = current_cart
+  	end
   end
 end

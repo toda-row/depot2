@@ -1,8 +1,8 @@
 class CartsController < ApplicationController
 
-  skip_before_filter :authorize, only: [:create, :update, :destroy]
+  skip_before_filter :authorize, :only => [:create, :update, :destroy]
 
-  before_action :set_cart, only: [:show, :edit, :update, :destroy]
+  before_action :set_cart, :only => [:show, :edit, :update, :destroy]
 
   # GET /carts
   # GET /carts.json
@@ -72,7 +72,7 @@ class CartsController < ApplicationController
     @cart.destroy
     session[:cart_id] = nil
     respond_to do |format|
-      format.html { redirect_to store_index_url }
+      format.html { redirect_to store_url }
       format.json { head :ok }
     end
   end

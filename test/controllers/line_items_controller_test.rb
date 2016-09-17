@@ -20,7 +20,7 @@ class LineItemsControllerTest < ActionController::TestCase
     assert_difference('LineItem.count') do
       post :create, product_id: products(:ruby).id
     end
-    assert_redirected_to store_index_url
+    assert_redirected_to store_url
   end
 
 

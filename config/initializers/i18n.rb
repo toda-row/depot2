@@ -2,6 +2,6 @@
 I18n.default_locale = :en
 
 LANGUAGES = [
-	['English', 'en'],
+	['English',                  'en'],
 	["Espa&ntilde;ol".html_safe, 'es']
 	]

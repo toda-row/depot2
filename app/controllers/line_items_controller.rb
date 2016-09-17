@@ -1,8 +1,8 @@
 class LineItemsController < ApplicationController
 
-  skip_before_filter :authorize, only::create
+  skip_before_filter :authorize, :only => :create
 
-  before_action :set_line_item, only: [:show, :edit, :update, :destroy]
+  before_action :set_line_item,  :only => [:show, :edit, :update, :destroy]
 
   # GET /line_items
   # GET /line_items.json
@@ -32,7 +32,7 @@ class LineItemsController < ApplicationController
     @line_item = @cart.add_product(product.id)
     respond_to do |format|
       if @line_item.save
-        format.html { redirect_to store_index_url }
+        format.html { redirect_to store_url }
         format.js { @current_item = @line_item }
         format.json { render json: @line_item, status: :created, location: @line_item }
       else
@@ -44,6 +44,7 @@ class LineItemsController < ApplicationController
 
   # PATCH/PUT /line_items/1
   # PATCH/PUT /line_items/1.json
+
   def update
     respond_to do |format|
       if @line_item.update(line_item_params)
@@ -58,6 +59,7 @@ class LineItemsController < ApplicationController
 
   # DELETE /line_items/1
   # DELETE /line_items/1.json
+  
   def destroy
     @line_item.destroy
     respond_to do |format|

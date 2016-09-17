@@ -8,9 +8,9 @@ skip_before_filter :authorize
 
   def create
   	user = User.find_by_name(params[:name])
-  	if user and user.authenticate(paramas[:password])
+  	if user and user.authenticate(params[:password])
   		session[:user_id] = user.id
-  		redirected_to admin_url
+  		redirect_to admin_url
   	else
   		redirect_to login_url, alert: "無効なユーザー/パスワードの組み合わせです"
   	end  

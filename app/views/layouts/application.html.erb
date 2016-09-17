@@ -13,7 +13,7 @@
 
 	<div id="banner">
 		<%= form_tag store_path, class: 'locale' do %>
-		<%= select_tag 'set_locale', options_for_select(LANGUAGES, I18n.locale.to_s),onchange: 'this.form.submit()' %>
+		<%= select_tag 'set_locale', options_for_select(LANGUAGES, I18n.locale.to_s), onchange: 'this.form.submit()' %>
 		<%= submit_tag 'submit' %>
 		<%= javascript_tag "$('.locale input').hide()" %>
 		<% end %>
@@ -31,9 +31,9 @@
 			
 			<ul>
 				<li><a href="http://www...."><%= t('.home') %></a></li>
-				<li><a href="http://www...."><%= t('.question') %></a></li>
-				<li><a href="http://www...."><%= t('.news') %></li>
-				<li><a href="http://www...."><%= t('.contact') %></li>
+				<li><a href="http://www..../faq"><%= t('.question') %></a></li>
+				<li><a href="http://www..../news"><%= t('.news') %></li>
+				<li><a href="http://www..../contact"><%= t('.contact') %></li>
 			</ul>
 
 			<% if session[:user_id] %>

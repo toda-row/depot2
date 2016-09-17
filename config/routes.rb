@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
-  get 'admin/index' => 'admin#index'
+  
+  get 'admin' => 'admin#index'
 
     controller :sessions do
       get 'login' => :new
@@ -8,11 +9,12 @@ Rails.application.routes.draw do
     end
 
 
-    scope '(:lozate)' do
+    scope '(:locale)' do
       resources :users
       resources :orders
       resources :line_items
       resources :carts
+      
       resources :products do
         get :who_bought, on: :member
       end

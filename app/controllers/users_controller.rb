@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :set_user, only: [:show, :edit, :update, :destroy]
+  before_action :set_user, :only => [:show, :edit, :update, :destroy]
 
   # GET /users
   # GET /users.json
@@ -64,7 +64,7 @@ class UsersController < ApplicationController
     begin
       @user.destroy
       flash[:notice] = "ユーザー#{@user.name}を削除しました"
-    rescure Exeption => e
+    rescue Exception => e
       flash[:notice] = e.massege
     end
 
